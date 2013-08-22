@@ -258,13 +258,11 @@ class TestNode(BaseNodeTestCase):
     @logwrap
     @fetch_logs
     def test_boot_volumes(self):
-        cluster_name = 'boot_volumes'
-        nodes_dict = {'controller': ['slave-01'],
-                      'compute': ['slave-02'],
-                      'cinder': ['slave-03']}
-        self.clean_clusters()
-        cluster_id = self.create_cluster(name=cluster_name)
-        self._basic_provisioning(cluster_id, nodes_dict)
+        self.prepare_environment(settings={
+            'controller': ['slave-01'],
+            'compute': ['slave-02'],
+            'cinder': ['slave-03']
+        })
 
         nodes = self.nodes().slaves[:3]
         online_flag_list = \
