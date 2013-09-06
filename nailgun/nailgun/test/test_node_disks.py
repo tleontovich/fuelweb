@@ -18,7 +18,7 @@ from copy import deepcopy
 import json
 
 from nailgun.errors import errors
-from nailgun.test.base import BaseHandlers
+from nailgun.test.base import BaseIntegrationTest
 from nailgun.test.base import reverse
 from nailgun.volumes.manager import Disk
 from nailgun.volumes.manager import DisksFormatConvertor
@@ -26,7 +26,7 @@ from nailgun.volumes.manager import only_disks
 from nailgun.volumes.manager import only_vg
 
 
-class TestNodeDisksHandlers(BaseHandlers):
+class TestNodeDisksHandlers(BaseIntegrationTest):
 
     def create_node(self, role='controller'):
         self.env.create(
@@ -164,7 +164,7 @@ class TestNodeDisksHandlers(BaseHandlers):
             response.body, "'size' is a required property")
 
 
-class TestNodeDefaultsDisksHandler(BaseHandlers):
+class TestNodeDefaultsDisksHandler(BaseIntegrationTest):
 
     def get(self, node_id):
         resp = self.app.get(
@@ -220,7 +220,7 @@ class TestNodeDefaultsDisksHandler(BaseHandlers):
         self.assertEquals(len(disks), len(volumes_from_api))
 
 
-class TestNodeVolumesInformationHandler(BaseHandlers):
+class TestNodeVolumesInformationHandler(BaseIntegrationTest):
 
     def get(self, node_id):
         resp = self.app.get(
@@ -266,7 +266,7 @@ class TestNodeVolumesInformationHandler(BaseHandlers):
         self.check_volumes(response, ['os', 'image'])
 
 
-class TestVolumeManager(BaseHandlers):
+class TestVolumeManager(BaseIntegrationTest):
 
     def create_node(self, role):
         self.env.create(
@@ -447,7 +447,7 @@ class TestVolumeManager(BaseHandlers):
                 node.volume_manager.check_disk_space_for_deployment)
 
 
-class TestDisks(BaseHandlers):
+class TestDisks(BaseIntegrationTest):
 
     def get_boot(self, volumes):
         return filter(
