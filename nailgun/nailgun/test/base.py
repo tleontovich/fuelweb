@@ -22,7 +22,6 @@ except ImportError:
 
 from datetime import datetime
 from functools import partial
-from itertools import izip
 import json
 import logging
 import mock
@@ -599,7 +598,6 @@ class BaseIntegrationTest(BaseTestCase):
                                 timeout
                             )
                         )
-
 
 
 def fake_tasks(fake_rpc=True,

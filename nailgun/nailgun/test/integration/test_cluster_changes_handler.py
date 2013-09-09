@@ -61,7 +61,7 @@ class TestHandlers(BaseIntegrationTest):
 
         floating_network_group = self.db.query(NetworkGroup).filter(
             NetworkGroup.name == 'floating').filter(
-                NetworkGroup.cluster_id == cluster_db.id).first()
+            NetworkGroup.cluster_id == cluster_db.id).first()
 
         # Remove floating ip addr ranges
         self.db.query(IPAddrRange).filter(
@@ -80,7 +80,7 @@ class TestHandlers(BaseIntegrationTest):
         # Update netmask for public network
         public_network_group = self.db.query(NetworkGroup).filter(
             NetworkGroup.name == 'public').filter(
-                NetworkGroup.cluster_id == cluster_db.id).first()
+            NetworkGroup.cluster_id == cluster_db.id).first()
         public_network_group.netmask = '255.255.255.128'
         self.db.commit()
 
