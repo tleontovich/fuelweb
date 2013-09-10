@@ -25,6 +25,7 @@ class CiBase(object):
     def __init__(self):
         self.manager = Manager()
         self._environment = None
+        self._environment_states = {}
 
     def _get_or_create(self):
         try:
@@ -124,6 +125,45 @@ class CiBase(object):
         if not(self.get_state(EMPTY_SNAPSHOT)):
             self.setup_environment()
             self.environment().snapshot(EMPTY_SNAPSHOT)
+
+    def generate_state_hash(self, settings):
+        return hashlib.md5(str(settings)).hexdigest()
+
+    def revert_to_state(self, settings):
+        state_hash = self.generate_state_hash(settings)
+
+        empty_state_hash = self.generate_state_hash({})
+        if state_hash == empty_state_hash:
+            # revert to empty state
+            self.get_empty_environment()
+            return True
+
+        if state_hash in self._environment_states:
+            # revert to matching state
+            state = self.environment_states[state_hash]
+            if not(self.get_state(state['snapshot_name'])):
+                return False
+            self.environment().resume()
+            return True
+
+        return False
+
+    def snapshot_state(self, name, settings):
+        state_hash = self.generate_state_hash(settings)
+        snapshot_name = '%s_%s'.format(
+                name.replace(' ', '_')[:17], state_hash)
+        self.environment().suspend(verbose=False)
+        self.environment().snapshot(
+            name=snapshot_name,
+            description=name,
+            force=True,
+        )
+        self.environment().resume(verbose=False)
+        self.environment_states[state_hash] = {
+            'snapshot_name': snapshot_name,
+            'cluster_name': name,
+            'settings': settings
+        }
 
     def internal_virtual_ip(self):
         return str(IPNetwork(
