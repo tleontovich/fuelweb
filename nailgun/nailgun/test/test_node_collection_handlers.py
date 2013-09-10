@@ -109,7 +109,8 @@ class TestHandlers(BaseHandlers):
         resp = self.app.post(
             reverse('NodeCollectionHandler'),
             json.dumps({'mac': 'ASDFAAASDFAA',
-                        'meta': self.env.default_metadata()}),
+                        'meta': self.env.default_metadata(),
+                        'status': 'discover'}),
             headers=self.default_headers)
         self.assertEquals(resp.status, 201)
         response = json.loads(resp.body)
@@ -131,7 +132,7 @@ class TestHandlers(BaseHandlers):
 
     def test_node_update_agent_discover(self):
         self.env.create_node(
-            api=True,
+            api=False,
             status='provisioning',
             meta=self.env.default_metadata()
         )
@@ -239,3 +240,13 @@ class TestHandlers(BaseHandlers):
             headers=self.default_headers,
             expect_errors=True)
         self.assertEquals(409, resp.status)
+
+    def test_node_creation_fail(self):
+        resp = self.app.post(
+            reverse('NodeCollectionHandler'),
+            json.dumps({'mac': 'ASDFAAASDF22',
+                        'meta': self.env.default_metadata(),
+                        'status': 'error'}),
+            headers=self.default_headers,
+            expect_errors=True)
+        self.assertEquals(resp.status, 403)

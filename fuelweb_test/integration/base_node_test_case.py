@@ -100,12 +100,13 @@ class BaseNodeTestCase(BaseTestCase):
 
     @logwrap
     def check_role_file(self, nodes_dict):
-        for node, role in self.get_nailgun_node_roles(nodes_dict):
+        for node, roles in self.get_nailgun_node_roles(nodes_dict):
             remote = SSHClient(
                 node['ip'], username='root', password='r00tme',
                 private_keys=self.get_private_keys())
-            if role != "cinder":
-                self.assertTrue(remote.isfile('/tmp/%s-file' % role))
+            for role in roles:
+                if role != "cinder":
+                    self.assertTrue(remote.isfile('/tmp/%s-file' % role))
 
     @logwrap
     def clean_clusters(self):
@@ -117,11 +118,11 @@ class BaseNodeTestCase(BaseTestCase):
             cluster_id, self.ci().get_host_node_ip(), port)
 
         # update cluster deployment mode
-        node_names = []
-        for role in nodes_dict:
-            node_names += nodes_dict[role]
+        node_names = [node_name for node_name in nodes_dict]
+        controller_names = filter(
+            lambda x: 'controller' in nodes_dict[x], nodes_dict)
         if len(node_names) > 1:
-            controller_amount = len(nodes_dict.get('controller', []))
+            controller_amount = len(controller_names)
             if controller_amount == 1:
                 self.client.update_cluster(
                     cluster_id,
@@ -145,7 +146,7 @@ class BaseNodeTestCase(BaseTestCase):
         empty_state_hash = hashlib.md5(str({})).hexdigest()
         if state_hash == empty_state_hash:
             # revert to empty state
-            self.ci().get_empty_state()
+            self.get_empty_environment()
         elif state_hash in self.environment_states:
             # revert virtual machines
             state = self.environment_states[state_hash]
@@ -153,20 +154,20 @@ class BaseNodeTestCase(BaseTestCase):
             self.ci().environment().resume()
         else:
             # create cluster
-            self.ci().get_empty_state()
+            self.get_empty_environment()
             cluster_id = self.create_cluster(name=name)
-            self._basic_provisioning(cluster_id, settings)
+            self._basic_provisioning(cluster_id, settings['nodes'])
 
             # make a snapshot
             snapshot_name = '%s_%s' % \
                             (name.replace(' ', '_')[:17], state_hash)
-            self.ci().environment().suspend()
+            self.ci().environment().suspend(verbose=False)
             self.ci().environment().snapshot(
                 name=snapshot_name,
                 description=name,
                 force=True,
             )
-            self.ci().environment().resume()
+            self.ci().environment().resume(verbose=False)
             self.environment_states[state_hash] = {
                 'snapshot_name': snapshot_name,
                 'cluster_name': name,
@@ -182,11 +183,10 @@ class BaseNodeTestCase(BaseTestCase):
     @logwrap
     def get_nailgun_node_roles(self, nodes_dict):
         nailgun_node_roles = []
-        for role in nodes_dict:
-            for node_name in nodes_dict[role]:
-                slave = self.ci().environment().node_by_name(node_name)
-                node = self.get_node_by_devops_node(slave)
-                nailgun_node_roles.append((node, role))
+        for node_name in nodes_dict:
+            slave = self.ci().environment().node_by_name(node_name)
+            node = self.get_node_by_devops_node(slave)
+            nailgun_node_roles.append((node, nodes_dict[node_name]))
         return nailgun_node_roles
 
     @logwrap
@@ -285,15 +285,14 @@ class BaseNodeTestCase(BaseTestCase):
                      pending_addition=True, pending_deletion=False):
         # update nodes in cluster
         nodes_data = []
-        for role in nodes_dict:
-            for node_name in nodes_dict[role]:
-                slave = self.ci().environment().node_by_name(node_name)
-                node = self.get_node_by_devops_node(slave)
-                node_data = {'cluster_id': cluster_id, 'id': node['id'],
-                             'pending_addition': pending_addition,
-                             'pending_deletion': pending_deletion,
-                             'role': role}
-                nodes_data.append(node_data)
+        for node_name in nodes_dict:
+            devops_node = self.ci().environment().node_by_name(node_name)
+            node = self.get_node_by_devops_node(devops_node)
+            node_data = {'cluster_id': cluster_id, 'id': node['id'],
+                         'pending_addition': pending_addition,
+                         'pending_deletion': pending_deletion,
+                         'pending_roles': nodes_dict[node_name]}
+            nodes_data.append(node_data)
 
         # assume nodes are going to be updated for one cluster only
         cluster_id = nodes_data[-1]['cluster_id']
@@ -448,3 +447,9 @@ class BaseNodeTestCase(BaseTestCase):
             cluster_id,
             networks=network_list,
             net_manager=NETWORK_MANAGERS['vlan'])
+
+    @logwrap
+    def get_empty_environment(self):
+        if not(self.ci().get_empty_state()):
+            self.ci().setup_environment()
+            self.ci().environment().snapshot(EMPTY_SNAPSHOT)

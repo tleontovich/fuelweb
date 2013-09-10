@@ -36,8 +36,13 @@ class TestNode(BaseNodeTestCase):
         cluster_id = self.prepare_environment(
             name="ha_flat",
             settings={
-                'controller': ['slave-01', 'slave-02', 'slave-03'],
-                'compute': ['slave-04', 'slave-05']
+                'nodes': {
+                    'slave-01': ['controller'],
+                    'slave-02': ['controller'],
+                    'slave-03': ['controller'],
+                    'slave-04': ['compute'],
+                    'slave-05': ['compute']
+                }
             }
         )
         self.assertClusterReady(
@@ -45,6 +50,32 @@ class TestNode(BaseNodeTestCase):
         self.get_ebtables(cluster_id, self.nodes().slaves[:5]).restore_vlans()
         task = self._run_network_verify(cluster_id)
         self.assertTaskSuccess(task, 60 * 2)
+        self.run_OSTF(cluster_id=cluster_id, should_fail=6, should_pass=18)
+
+    @snapshot_errors
+    @logwrap
+    @fetch_logs
+    def test_ha_add_compute(self):
+        cluster_id = self.prepare_environment(
+            name="ha_flat",
+            settings={
+                'nodes': {
+                    'slave-01': ['controller'],
+                    'slave-02': ['controller'],
+                    'slave-03': ['controller'],
+                    'slave-04': ['compute'],
+                    'slave-05': ['compute']
+                }
+            }
+        )
+
+        self.bootstrap_nodes(self.nodes().slaves[5:6])
+        self.update_nodes(cluster_id, {'slave-06': ['compute']}, True, False)
+
+        task = self.client.deploy_cluster_changes(cluster_id)
+        self.assertTaskSuccess(task)
+        self.assertEqual(6, len(self.client.list_cluster_nodes(cluster_id)))
+
         self.run_OSTF(cluster_id=cluster_id, should_fail=6, should_pass=18)
 
 if __name__ == '__main__':
