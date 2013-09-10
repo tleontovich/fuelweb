@@ -21,6 +21,8 @@ OPENSTACK_RELEASE = os.environ.get('OPENSTACK_RELEASE', 'Grizzly')
 
 REDHAT_USERNAME = os.environ.get('REDHAT_USERNAME')
 REDHAT_PASSWORD = os.environ.get('REDHAT_PASSWORD')
+REDHAT_SATELLITE_HOST = os.environ.get('REDHAT_SATELLITE_HOST')
+REDHAT_ACTIVATION_KEY = os.environ.get('REDHAT_ACTIVATION_KEY')
 
 INTERFACE_ORDER = ('internal', 'public', 'private', 'nat')
 

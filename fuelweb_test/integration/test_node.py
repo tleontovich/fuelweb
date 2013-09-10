@@ -384,7 +384,7 @@ class TestNode(BaseNodeTestCase):
         # remote.execute('wget -q http://172.18.67.168/rhel6/rhel-rpms.tar.gz')
         # remote.execute('tar xzf rhel-rpms.tar.gz -C /')
 
-        self.update_redhat_credentials()
+        self.update_redhat_credentials('rhn')
         self.assert_release_state('RHOS', state='available')
         # self.ci().environment().snapshot(
         #     name='empty', description='empty', force=True)

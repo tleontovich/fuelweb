@@ -238,7 +238,4 @@ class NailgunClient(object):
     @logwrap
     @json_parse
     def update_redhat_setup(self, data):
-         return self.client.post(
-            "/api/redhat/setup",
-            data=data
-        )
+        return self.client.post("/api/redhat/setup", data=data)
