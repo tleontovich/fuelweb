@@ -98,9 +98,15 @@ class CiFuelWeb(CiBase):
         remote = self.nodes().admin.remote('internal', 'root', 'r00tme')
 
         nat_interface_id = 5
-        file_name = '/etc/sysconfig/network-scripts/ifcfg-eth%s' % nat_interface_id
-        hwaddr = ''.join(remote.execute('grep HWADDR %s' % file_name)['stdout'])
+        file_name = \
+            '/etc/sysconfig/network-scripts/ifcfg-eth%s' % nat_interface_id
+        hwaddr = \
+            ''.join(remote.execute('grep HWADDR %s' % file_name)['stdout'])
         uuid = ''.join(remote.execute('grep UUID %s' % file_name)['stdout'])
+        nameserver = os.popen(
+            "nmcli dev list | grep 'IP[46].DNS' | "
+            "sed -e 's/IP[46]\.DNS\[[0-9]\+\]:\s\+/nameserver /'| "
+            "grep -v 'nameserver\s\s*127.' | head -3").read()
 
         remote.execute('echo -e "%s'
                        '%s'
@@ -109,9 +115,12 @@ class CiFuelWeb(CiBase):
                        'ONBOOT=yes\\n'
                        'NM_CONTROLLED=no\\n'
                        'BOOTPROTO=dhcp\\n'
-                       'PEERDNS=no" > %s' % (hwaddr, uuid, nat_interface_id, file_name))
-        remote.execute('sed "s/GATEWAY=.*/GATEWAY="%s"/g" -i /etc/sysconfig/network' % self.nat_router())
-        remote.execute('echo -e "nameserver 8.8.8.8" > /etc/dnsmasq.upstream')
+                       'PEERDNS=no" > %s'
+                       % (hwaddr, uuid, nat_interface_id, file_name))
+        remote.execute(
+            'sed "s/GATEWAY=.*/GATEWAY="%s"/g" -i /etc/sysconfig/network'
+            % self.nat_router())
+        remote.execute('echo -e "%s" > /etc/dnsmasq.upstream' % nameserver)
         remote.execute('service network restart >/dev/null 2>&1')
         remote.execute('service dnsmasq restart >/dev/null 2>&1')
 
