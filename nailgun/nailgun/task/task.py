@@ -345,17 +345,17 @@ class ProvisionTask(object):
                 node.id,
                 len(node.meta.get('interfaces', []))
             )
-            admin_net_id = netmanager.get_admin_network_id()
+            admin_net = netmanager.get_admin_network()
             admin_ips = set([i.ip_addr for i in db().query(IPAddr).
                             filter_by(node=node.id).
-                            filter_by(network=admin_net_id)])
+                            filter_by(network=admin_net.id)])
             for i in node.meta.get('interfaces', []):
                 if 'interfaces' not in node_data:
                     node_data['interfaces'] = {}
                 node_data['interfaces'][i['name']] = {
                     'mac_address': i['mac'],
                     'static': '0',
-                    'netmask': settings.ADMIN_NETWORK['netmask'],
+                    'netmask': admin_net.network_group.netmask,
                     'ip_address': admin_ips.pop(),
                 }
                 # interfaces_extra field in cobbler ks_meta
@@ -662,7 +662,8 @@ class CheckNetworksTask(object):
                               ))
                     raise errors.NetworkCheckError(err_msg, add_client=False)
 
-        admin_range = netaddr.IPNetwork(settings.ADMIN_NETWORK['cidr'])
+        admin_ng = NetworkManager().get_admin_network_group()
+        admin_range = netaddr.IPNetwork(admin_ng.cidr)
         for ng in networks:
             net_errors = []
             sub_ranges = []
@@ -678,7 +679,7 @@ class CheckNetworksTask(object):
                         err_msgs.append(
                             "Intersection with admin "
                             "network(s) '{0}' found".format(
-                                settings.ADMIN_NETWORK['cidr']
+                                admin_ng.cidr
                             )
                         )
                     if fnet.size < ng['network_size'] * ng['amount']:
@@ -701,7 +702,7 @@ class CheckNetworksTask(object):
                                 "with admin range of {3}".format(
                                     v[0], v[1],
                                     ng.get('name') or ng_db.name or ng_db.id,
-                                    settings.ADMIN_NETWORK['cidr']
+                                    admin_ng.cidr
                                 )
                             )
                             sub_ranges.append(k)

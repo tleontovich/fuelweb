@@ -131,13 +131,13 @@ class TestHandlers(BaseHandlers):
         nodes = []
         provision_nodes = []
 
-        admin_net_id = self.env.network_manager.get_admin_network_id()
+        admin_net = self.env.network_manager.get_admin_network()
 
         for n in sorted(self.env.nodes, key=lambda n: n.id):
 
             q = self.db.query(IPAddr).join(Network).\
                 filter(IPAddr.node == n.id).filter(
-                    not_(IPAddr.network == admin_net_id)
+                    not_(IPAddr.network == admin_net.id)
                 )
 
             """
@@ -225,7 +225,7 @@ class TestHandlers(BaseHandlers):
 
             admin_ips = set([i.ip_addr for i in self.db.query(IPAddr).
                             filter_by(node=n.id).
-                            filter_by(network=admin_net_id)])
+                            filter_by(network=admin_net.id)])
 
             for i in n.meta.get('interfaces', []):
                 if 'interfaces' not in pnd:
@@ -233,7 +233,7 @@ class TestHandlers(BaseHandlers):
                 pnd['interfaces'][i['name']] = {
                     'mac_address': i['mac'],
                     'static': '0',
-                    'netmask': settings.ADMIN_NETWORK['netmask'],
+                    'netmask': admin_net.network_group.netmask,
                     'ip_address': admin_ips.pop(),
                 }
                 if 'interfaces_extra' not in pnd:
